@@ -1,33 +1,3 @@
-# this is for resume chat features for the chatbot
-
-# -> add a sidebar with title + A Start Chat Button + A title named 'My Conversations'
-# 
-# -> generate dynamic thread Id and add it to the session
-# 
-# -> Display the thread id in sidebar
-# 
-# ********************************************************************************
-# 
-# -> add a New Chat button
-# 
-# -> On Click of new chat open a new chat window
-#     * generate a new thread_id
-#     * save it in session
-#     * reset message history
-# 
-# ********************************************************************************
-# 
-# -> create a list to store all thread_ids
-# 
-# -> Load all the thread ids in the sidebar
-# 
-# -> convert the side bar text to clickable buttons    ->button
-# 
-# ********************************************************************************
-# 
-# -> on click of a particular thread id load that particular conversation
-
-
 import streamlit as st
 from langgraph_database_backend import chatbot, retrieve_all_threads
 from langchain_core.messages import HumanMessage
@@ -63,7 +33,7 @@ if 'thread_id' not in st.session_state:
     st.session_state['thread_id'] = generate_thread_id()
 
 if 'chat_threads' not in st.session_state:
-    st.session_state['chat_threads'] = retrieve_all_threads()  # retrieve function is present on database_backend file .. it gives the unique thread and add these in chat_thread
+    st.session_state['chat_threads'] = retrieve_all_threads()  #just this line for database
 
 add_thread(st.session_state['thread_id'])
 
