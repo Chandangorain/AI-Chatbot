@@ -21,7 +21,7 @@
 # 
 # -> Load all the thread ids in the sidebar
 # 
-# -> convert the side bar text to clickable buttons
+# -> convert the side bar text to clickable buttons    ->button
 # 
 # ********************************************************************************
 # 
@@ -46,6 +46,16 @@ def reset_chat():
     add_thread(st.session_state['thread_id'])
     st.session_state['message_history'] = []
 
+def add_thread(thread_id):
+    if thread_id not in st.session_state['chat_threads']:
+        st.session_state['chat_threads'].append(thread_id)
+
+# this functions helps to return the conversation history for a psrticular thread when the thread id is clicked in my conversations
+def load_conversation(thread_id):
+    state = chatbot.get_state(config={'configurable': {'thread_id': thread_id}})
+    # Check if messages key exists in state values, return empty list if not
+    return state.values.get('messages', [])
+
 ##################################### session setup #####################################
 
 if 'message_history' not in st.session_state:
@@ -55,12 +65,26 @@ if 'thread_id' not in st.session_state:
     st.session_state['thread_id'] = generate_thread_id()
 
 
+if 'thread_id' not in st.session_state:
+    st.session_state['thread_id'] = generate_thread_id()
+
+
+if 'chat_threads' not in st.session_state:
+    st.session_state['chat_threads'] = []
+
+add_thread(st.session_state['thread_id'])
+
 ########################## sidebar ui #####################################
 st.sidebar.title('LangGraph Chatbot')
 if st.sidebar.button('New Chat'):
     reset_chat()        # new chat clicked -> call reset chat()
 
 st.sidebar.header('My Conversations')
+
+for thread_id in st.session_state['chat_threads'][::-1]:  # this stores the thread id in a list . 
+    if st.sidebar.button(str(thread_id)):           # if thread_id clicked
+        st.session_state['thread_id'] = thread_id   #then update the thread_id
+        messages = load_conversation(thread_id)     # and retrieve the conversation history by calling load_conversation() function
 
 
 
