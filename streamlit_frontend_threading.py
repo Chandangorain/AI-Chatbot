@@ -34,10 +34,17 @@ from langchain_core.messages import HumanMessage
 import uuid
 
 
-########################utility functions #####################################
+########################  utility functions #####################################
 def generate_thread_id():   # random thread_id generation
     thread_id=uuid.uuid4()
     return thread_id
+
+
+def reset_chat():
+    thread_id = generate_thread_id()
+    st.session_state['thread_id'] = thread_id
+    add_thread(st.session_state['thread_id'])
+    st.session_state['message_history'] = []
 
 ##################################### session setup #####################################
 
@@ -45,14 +52,17 @@ if 'message_history' not in st.session_state:
     st.session_state['message_history'] = []
 
 if 'thread_id' not in st.session_state:
-    st.session_State['message_history'] = []
-    
+    st.session_state['thread_id'] = generate_thread_id()
+
 
 ########################## sidebar ui #####################################
 st.sidebar.title('LangGraph Chatbot')
-st.sidebar.button('Start New Chat')
+if st.sidebar.button('New Chat'):
+    reset_chat()        # new chat clicked -> call reset chat()
 
 st.sidebar.header('My Conversations')
+
+
 
 ################################ Main UI #####################################
 # loading the conversation history
@@ -72,6 +82,9 @@ if user_input:
     with st.chat_message('user'):
         st.text(user_input)
 
+
+    CONFIG = {'configurable': {'thread_id': st.session_state['thread_id']}}
+
     # first add the message to message_history
     with st.chat_message('assistant'):
 
@@ -80,7 +93,7 @@ if user_input:
         ai_message = st.write_stream(
             message_chunk.content for message_chunk, metadata in chatbot.stream(
                 {'messages': [HumanMessage(content=user_input)]},
-                config= {'configurable': {'thread_id': 'thread-1'}},
+                 config=CONFIG,
                 stream_mode= 'messages'
             )
         )
