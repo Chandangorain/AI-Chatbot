@@ -86,6 +86,18 @@ for thread_id in st.session_state['chat_threads'][::-1]:  # this stores the thre
         st.session_state['thread_id'] = thread_id   #then update the thread_id
         messages = load_conversation(thread_id)     # and retrieve the conversation history by calling load_conversation() function
 
+        
+        temp_messages = []
+
+        for msg in messages:
+            if isinstance(msg, HumanMessage):
+                role='user'
+            else:
+                role='assistant'
+            temp_messages.append({'role': role, 'content': msg.content})
+
+        st.session_state['message_history'] = temp_messages
+
 
 
 ################################ Main UI #####################################
