@@ -82,12 +82,14 @@ if user_input:
 
     #CONFIG = {'configurable': {'thread_id': st.session_state['thread_id']}}
 
+
+    #this config is for langsmith tracing 
     CONFIG = {
         "configurable": {"thread_id": st.session_state["thread_id"]},
         "metadata": {
             "thread_id": st.session_state["thread_id"]
         },
-        "run_name": "chat_turn",
+        "run_name": "chat_turn",    #this is the project name , that will be shown in langsmith project 
     }
 
     # first add the message to message_history
