@@ -73,8 +73,18 @@ def get_weather(city: str) -> dict:
     r = requests.get(url)
     return r.json()
 
+@tool
+def convert_currency(amount: float, from_currency: str, to_currency: str) -> dict:
+    """
+    Convert an amount from one currency to another (e.g. 'USD', 'INR', 'EUR')
+    using a free real-time exchange rate API.
+    """
+    url = f"https://open.er-api.com/v6/latest/{from_currency.upper()}"
+    r = requests.get(url)
+    return r.json()
 
-tools = [search_tool, get_stock_price, calculator,get_weather]
+
+tools = [search_tool, get_stock_price, calculator,get_weather,convert_currency]
 llm_with_tools = llm.bind_tools(tools)
 
 # -------------------
