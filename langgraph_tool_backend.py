@@ -63,9 +63,18 @@ def get_stock_price(symbol: str) -> dict:
     r = requests.get(url)
     return r.json()
 
+@tool
+def get_weather(city: str) -> dict:
+    """
+    Fetch current weather data for a given city (e.g. 'London', 'Mumbai')
+    using Weatherstack with API key in the URL.
+    """
+    url = f"https://api.weatherstack.com/current?access_key=5948896fe9feb84d3f89ba796917659d&query={city}"
+    r = requests.get(url)
+    return r.json()
 
 
-tools = [search_tool, get_stock_price, calculator]
+tools = [search_tool, get_stock_price, calculator,get_weather]
 llm_with_tools = llm.bind_tools(tools)
 
 # -------------------
