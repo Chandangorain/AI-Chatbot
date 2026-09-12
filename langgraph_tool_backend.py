@@ -12,6 +12,7 @@ from langchain_core.tools import tool
 from dotenv import load_dotenv
 import sqlite3
 import requests
+import uuid
 
 load_dotenv()
 
@@ -83,6 +84,14 @@ def convert_currency(amount: float, from_currency: str, to_currency: str) -> dic
     r = requests.get(url)
     return r.json()
 
+import requests
+from langchain_core.tools import tool
+from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
+
+# Initialize DDG Search with news backend
+ddg_news_wrapper = DuckDuckGoSearchAPIWrapper(backend="news", max_results=5)
+
 
 tools = [search_tool, get_stock_price, calculator,get_weather,convert_currency]
 llm_with_tools = llm.bind_tools(tools)
@@ -130,5 +139,10 @@ chatbot = graph.compile(checkpointer=checkpointer)
 def retrieve_all_threads():
     all_threads = set()
     for checkpoint in checkpointer.list(None):
-        all_threads.add(checkpoint.config["configurable"]["thread_id"])
+        tid = checkpoint.config["configurable"]["thread_id"]
+        try:
+            uuid.UUID(tid)
+            all_threads.add(tid)
+        except ValueError:
+            continue
     return list(all_threads)
