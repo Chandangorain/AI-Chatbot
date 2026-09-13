@@ -1,3 +1,4 @@
+```python
 from __future__ import annotations
 
 import os
@@ -55,20 +56,73 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
         temp_path = temp_file.name
 
     try:
+        # -------------------
+        # Load PDF
+        # -------------------
         loader = PyPDFLoader(temp_path)
         docs = loader.load()
 
+        # ✅ CHANGED 1:
+        # Check how many pages were loaded
+        print("Number of pages loaded:", len(docs))
+
+        # ✅ CHANGED 2:
+        # Check how much text was extracted from each page
+        for i, doc in enumerate(docs):
+            print(
+                f"Page {i + 1} text length: {len(doc.page_content)}"
+            )
+
+        # ✅ CHANGED 3:
+        # Remove pages that contain no readable text
+        docs = [
+            doc
+            for doc in docs
+            if doc.page_content and doc.page_content.strip()
+        ]
+
+        # ✅ CHANGED 4:
+        # Stop before FAISS if PDF contains no readable text
+        if not docs:
+            raise ValueError(
+                "No readable text was found in the PDF. "
+                "The PDF may be scanned/image-based."
+            )
+
+        # -------------------
+        # Split documents
+        # -------------------
         splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=200, separators=["\n\n", "\n", " ", ""]
+            chunk_size=1000,
+            chunk_overlap=200,
+            separators=["\n\n", "\n", " ", ""]
         )
+
         chunks = splitter.split_documents(docs)
 
+        # ✅ CHANGED 5:
+        # Print number of chunks for debugging
+        print("Number of chunks created:", len(chunks))
+
+        # ✅ CHANGED 6:
+        # Prevent FAISS error when chunks are empty
+        if not chunks:
+            raise ValueError(
+                "No text chunks were created from the PDF."
+            )
+
+        # -------------------
+        # Create FAISS vector store
+        # -------------------
         vector_store = FAISS.from_documents(chunks, embeddings)
+
         retriever = vector_store.as_retriever(
-            search_type="similarity", search_kwargs={"k": 4}
+            search_type="similarity",
+            search_kwargs={"k": 4}
         )
 
         _THREAD_RETRIEVERS[str(thread_id)] = retriever
+
         _THREAD_METADATA[str(thread_id)] = {
             "filename": filename or os.path.basename(temp_path),
             "documents": len(docs),
@@ -80,8 +134,10 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
             "documents": len(docs),
             "chunks": len(chunks),
         }
+
     finally:
-        # The FAISS store keeps copies of the text, so the temp file is safe to remove.
+        # The FAISS store keeps copies of the text,
+        # so the temp file is safe to remove.
         try:
             os.remove(temp_path)
         except OSError:
@@ -103,16 +159,23 @@ def calculator(first_num: float, second_num: float, operation: str) -> dict:
     try:
         if operation == "add":
             result = first_num + second_num
+
         elif operation == "sub":
             result = first_num - second_num
+
         elif operation == "mul":
             result = first_num * second_num
+
         elif operation == "div":
             if second_num == 0:
                 return {"error": "Division by zero is not allowed"}
+
             result = first_num / second_num
+
         else:
-            return {"error": f"Unsupported operation '{operation}'"}
+            return {
+                "error": f"Unsupported operation '{operation}'"
+            }
 
         return {
             "first_num": first_num,
@@ -120,6 +183,7 @@ def calculator(first_num: float, second_num: float, operation: str) -> dict:
             "operation": operation,
             "result": result,
         }
+
     except Exception as e:
         return {"error": str(e)}
 
@@ -127,14 +191,19 @@ def calculator(first_num: float, second_num: float, operation: str) -> dict:
 @tool
 def get_stock_price(symbol: str) -> dict:
     """
-    Fetch latest stock price for a given symbol (e.g. 'AAPL', 'TSLA') 
+    Fetch latest stock price for a given symbol (e.g. 'AAPL', 'TSLA')
     using Alpha Vantage with API key in the URL.
     """
+
+    # ⚠️ Your existing API key is kept here so the code structure
+    # remains the same. Ideally move it to .env.
     url = (
         "https://www.alphavantage.co/query"
         f"?function=GLOBAL_QUOTE&symbol={symbol}&apikey=C9PE94QUEW9VWGFM"
     )
+
     r = requests.get(url)
+
     return r.json()
 
 
@@ -144,7 +213,9 @@ def rag_tool(query: str, thread_id: Optional[str] = None) -> dict:
     Retrieve relevant information from the uploaded PDF for this chat thread.
     Always include the thread_id when calling this tool.
     """
+
     retriever = _get_retriever(thread_id)
+
     if retriever is None:
         return {
             "error": "No document indexed for this chat. Upload a PDF first.",
@@ -152,25 +223,45 @@ def rag_tool(query: str, thread_id: Optional[str] = None) -> dict:
         }
 
     result = retriever.invoke(query)
-    context = [doc.page_content for doc in result]
-    metadata = [doc.metadata for doc in result]
+
+    context = [
+        doc.page_content
+        for doc in result
+    ]
+
+    metadata = [
+        doc.metadata
+        for doc in result
+    ]
 
     return {
         "query": query,
         "context": context,
         "metadata": metadata,
-        "source_file": _THREAD_METADATA.get(str(thread_id), {}).get("filename"),
+        "source_file": _THREAD_METADATA.get(
+            str(thread_id), {}
+        ).get("filename"),
     }
 
 
-tools = [search_tool, get_stock_price, calculator, rag_tool]
+tools = [
+    search_tool,
+    get_stock_price,
+    calculator,
+    rag_tool
+]
+
 llm_with_tools = llm.bind_tools(tools)
+
 
 # -------------------
 # 4. State
 # -------------------
 class ChatState(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
+    messages: Annotated[
+        list[BaseMessage],
+        add_messages
+    ]
 
 
 # -------------------
@@ -178,9 +269,13 @@ class ChatState(TypedDict):
 # -------------------
 def chat_node(state: ChatState, config=None):
     """LLM node that may answer or request a tool call."""
+
     thread_id = None
+
     if config and isinstance(config, dict):
-        thread_id = config.get("configurable", {}).get("thread_id")
+        thread_id = config.get(
+            "configurable", {}
+        ).get("thread_id")
 
     system_message = SystemMessage(
         content=(
@@ -192,39 +287,81 @@ def chat_node(state: ChatState, config=None):
         )
     )
 
-    messages = [system_message, *state["messages"]]
-    response = llm_with_tools.invoke(messages, config=config)
-    return {"messages": [response]}
+    messages = [
+        system_message,
+        *state["messages"]
+    ]
+
+    response = llm_with_tools.invoke(
+        messages,
+        config=config
+    )
+
+    return {
+        "messages": [response]
+    }
 
 
 tool_node = ToolNode(tools)
 
+
 # -------------------
 # 6. Checkpointer
 # -------------------
-conn = sqlite3.connect(database="chatbot.db", check_same_thread=False)
+conn = sqlite3.connect(
+    database="chatbot.db",
+    check_same_thread=False
+)
+
 checkpointer = SqliteSaver(conn=conn)
+
 
 # -------------------
 # 7. Graph
 # -------------------
 graph = StateGraph(ChatState)
-graph.add_node("chat_node", chat_node)
-graph.add_node("tools", tool_node)
 
-graph.add_edge(START, "chat_node")
-graph.add_conditional_edges("chat_node", tools_condition)
-graph.add_edge("tools", "chat_node")
+graph.add_node(
+    "chat_node",
+    chat_node
+)
 
-chatbot = graph.compile(checkpointer=checkpointer)
+graph.add_node(
+    "tools",
+    tool_node
+)
+
+graph.add_edge(
+    START,
+    "chat_node"
+)
+
+graph.add_conditional_edges(
+    "chat_node",
+    tools_condition
+)
+
+graph.add_edge(
+    "tools",
+    "chat_node"
+)
+
+chatbot = graph.compile(
+    checkpointer=checkpointer
+)
+
 
 # -------------------
 # 8. Helpers
 # -------------------
 def retrieve_all_threads():
     all_threads = set()
+
     for checkpoint in checkpointer.list(None):
-        all_threads.add(checkpoint.config["configurable"]["thread_id"])
+        all_threads.add(
+            checkpoint.config["configurable"]["thread_id"]
+        )
+
     return list(all_threads)
 
 
@@ -233,4 +370,8 @@ def thread_has_document(thread_id: str) -> bool:
 
 
 def thread_document_metadata(thread_id: str) -> dict:
-    return _THREAD_METADATA.get(str(thread_id), {})
+    return _THREAD_METADATA.get(
+        str(thread_id),
+        {}
+    )
+
