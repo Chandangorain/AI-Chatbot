@@ -1,4 +1,4 @@
-```python
+
 from __future__ import annotations
 
 import os
@@ -62,18 +62,17 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
         loader = PyPDFLoader(temp_path)
         docs = loader.load()
 
-        # ✅ CHANGED 1:
+        
         # Check how many pages were loaded
         print("Number of pages loaded:", len(docs))
 
-        # ✅ CHANGED 2:
+       
         # Check how much text was extracted from each page
         for i, doc in enumerate(docs):
             print(
                 f"Page {i + 1} text length: {len(doc.page_content)}"
             )
 
-        # ✅ CHANGED 3:
         # Remove pages that contain no readable text
         docs = [
             doc
@@ -81,7 +80,7 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
             if doc.page_content and doc.page_content.strip()
         ]
 
-        # ✅ CHANGED 4:
+        
         # Stop before FAISS if PDF contains no readable text
         if not docs:
             raise ValueError(
@@ -100,11 +99,11 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
 
         chunks = splitter.split_documents(docs)
 
-        # ✅ CHANGED 5:
+       
         # Print number of chunks for debugging
         print("Number of chunks created:", len(chunks))
 
-        # ✅ CHANGED 6:
+        
         # Prevent FAISS error when chunks are empty
         if not chunks:
             raise ValueError(
@@ -121,8 +120,8 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
             search_kwargs={"k": 4}
         )
 
-        _THREAD_RETRIEVERS[str(thread_id)] = retriever
-
+        _THREAD_RETRIEVERS[str(thread_id)] = retriever #when user uploads a PDF in a particular chat:thread_id = "chat_101".
+                                                         #we store:_THREAD_RETRIEVERS["chat_101"] = retriever   
         _THREAD_METADATA[str(thread_id)] = {
             "filename": filename or os.path.basename(temp_path),
             "documents": len(docs),
